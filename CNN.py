@@ -53,3 +53,4 @@ model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
 history = model.fit(train_set, epochs=100, validation_data=val_set)
 
 model.save('C:/Treinamento IA/result.keras')
+
