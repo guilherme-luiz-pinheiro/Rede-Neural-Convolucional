@@ -16,17 +16,7 @@ early_stopping = EarlyStopping(
 )
 
 # ============================
-# 2. Definir a Função de Scheduler
-# ============================
-def scheduler(epoch, lr):
-    # Exemplo de decaimento exponencial da taxa de aprendizado
-    if epoch < 10:
-        return lr
-    else:
-        return lr * tf.math.exp(-0.1)  # Decaimento exponencial
-
-# ============================
-# 3. Configuração dos Dados
+# 2. Configuração dos Dados
 # ============================
 TRAIN_DIR = "C:/Treinamento IA/Train"
 
@@ -51,7 +41,7 @@ val_set = train_datagen.flow_from_directory(
 )
 
 # ============================
-# 4. Definição do Modelo
+# 3. Definição do Modelo
 # ============================
 model = tf.keras.models.Sequential([
     tf.keras.layers.Conv2D(32, (3, 3), padding='Same', activation='relu', input_shape=(480, 640, 3),
@@ -80,13 +70,13 @@ model = tf.keras.models.Sequential([
 print(model.summary())
 
 # ============================
-# 5. Compilação do Modelo
+# 4. Compilação do Modelo
 # ============================
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
               loss='binary_crossentropy', metrics=['accuracy', tf.keras.metrics.AUC(name='auc')])
 
 # ============================
-# 6. Configuração do ReduceLROnPlateau
+# 5. Configuração do ReduceLROnPlateau
 # ============================
 reduce_lr = ReduceLROnPlateau(
     monitor='val_loss',  # Monitorar a perda de validação
@@ -98,7 +88,7 @@ reduce_lr = ReduceLROnPlateau(
 )
 
 # ============================
-# 7. Treinamento com EarlyStopping e ReduceLROnPlateau
+# 6. Treinamento com EarlyStopping e ReduceLROnPlateau
 # ============================
 history = model.fit(
     train_set,
@@ -108,12 +98,12 @@ history = model.fit(
 )
 
 # ============================
-# 8. Salvamento do Modelo
+# 7. Salvamento do Modelo
 # ============================
 model.save('C:/Treinamento IA/result.keras')
 
 # ============================
-# 9. Gráfico de Aprendizado
+# 8. Gráfico de Aprendizado
 # ============================
 plt.figure(figsize=(12, 6))
 
