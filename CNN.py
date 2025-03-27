@@ -8,10 +8,10 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 # 1. Configuração do Early Stopping
 # ============================
 early_stopping = EarlyStopping(
-    monitor='val_loss',
-    patience=5,  # Reduzido para 5
+    monitor='val_accuracy',
+    patience=10,  # Aumentando o patience para evitar interrupção precoce
     verbose=1,
-    mode='min',
+    mode='max',
     restore_best_weights=True
 )
 
@@ -21,14 +21,10 @@ early_stopping = EarlyStopping(
 TRAIN_DIR = "C:/Treinamento IA/Train"
 
 train_datagen = ImageDataGenerator(
-    rescale=1. / 255,
+    rescale=1.0 / 255,
     shear_range=0.2,
     zoom_range=0.2,
     horizontal_flip=True,
-    rotation_range=20,  # Adicionando rotação
-    width_shift_range=0.2,  # Deslocamento horizontal
-    height_shift_range=0.2,  # Deslocamento vertical
-    brightness_range=[0.8, 1.2],  # Ajuste de brilho
     validation_split=0.2
 )
 
@@ -45,25 +41,34 @@ val_set = train_datagen.flow_from_directory(
 # ============================
 model = tf.keras.models.Sequential([
     tf.keras.layers.Conv2D(32, (3, 3), padding='Same', activation='relu', input_shape=(480, 640, 3),
-                           kernel_regularizer=tf.keras.regularizers.l2(0.001)),  # Reduzido
+                           kernel_initializer='he_normal', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
+    tf.keras.layers.BatchNormalization(),
     tf.keras.layers.Conv2D(32, (3, 3), padding='Same', activation='relu',
-                           kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+                           kernel_initializer='he_normal', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
+    tf.keras.layers.BatchNormalization(),
     tf.keras.layers.MaxPool2D((2, 2), strides=(2, 2)),
+    
     tf.keras.layers.Conv2D(64, (3, 3), padding='Same', activation='relu',
-                           kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+                           kernel_initializer='he_normal', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
+    tf.keras.layers.BatchNormalization(),
     tf.keras.layers.Conv2D(64, (3, 3), padding='Same', activation='relu',
-                           kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+                           kernel_initializer='he_normal', kernel_regularizer=tf.keras.regularizers.l2(0.0005)),
+    tf.keras.layers.BatchNormalization(),
     tf.keras.layers.MaxPool2D((2, 2), strides=(2, 2)),
-    tf.keras.layers.Dropout(0.4),
+    
     tf.keras.layers.Conv2D(128, (3, 3), padding='Same', activation='relu',
-                           kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+                           kernel_initializer='he_normal', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
+    tf.keras.layers.BatchNormalization(),
     tf.keras.layers.Conv2D(128, (3, 3), padding='Same', activation='relu',
-                           kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+                           kernel_initializer='he_normal', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
+    tf.keras.layers.BatchNormalization(),
     tf.keras.layers.MaxPool2D((2, 2), strides=(2, 2)),
-    tf.keras.layers.Dropout(0.5),
+    tf.keras.layers.Dropout(0.1),  # Dropout reduzido para 0.1
+
     tf.keras.layers.Flatten(),
-    tf.keras.layers.Dense(256, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
-    tf.keras.layers.Dropout(0.4),  # Reduzido de 0.6 para 0.4
+    tf.keras.layers.Dense(256, activation='relu', kernel_initializer='he_normal', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
+    tf.keras.layers.BatchNormalization(),
+    tf.keras.layers.Dropout(0.6),
     tf.keras.layers.Dense(1, activation='sigmoid')
 ])
 
@@ -72,20 +77,21 @@ print(model.summary())
 # ============================
 # 4. Compilação do Modelo
 # ============================
-model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
+model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),  # Taxa de aprendizado mais baixa
               loss='binary_crossentropy', metrics=['accuracy', tf.keras.metrics.AUC(name='auc')])
 
 # ============================
 # 5. Configuração do ReduceLROnPlateau
 # ============================
 reduce_lr = ReduceLROnPlateau(
-    monitor='val_loss',  # Monitorar a perda de validação
-    factor=0.5,  # Reduz a taxa de aprendizado pela metade
-    patience=3,  # Espera 3 épocas sem melhoria
-    verbose=1,  # Mostra uma mensagem ao reduzir a taxa de aprendizado
-    mode='min',  # A redução ocorre quando a perda diminui
-    min_lr=1e-6  # A taxa de aprendizado não pode ser menor que 1e-6
+    monitor='val_accuracy',   # Agora estamos monitorando a precisão de validação
+    factor=0.5,               # Fator pelo qual a taxa de aprendizado será reduzida
+    patience=5,               # Espera por 5 épocas sem melhoria antes de reduzir a taxa de aprendizado
+    verbose=1,                # Exibe as informações durante o treinamento
+    mode='max',               # Tentando maximizar a precisão (val_accuracy)
+    min_lr=1e-6               # Limite inferior para a taxa de aprendizado
 )
+
 
 # ============================
 # 6. Treinamento com EarlyStopping e ReduceLROnPlateau
@@ -94,7 +100,7 @@ history = model.fit(
     train_set,
     epochs=100,
     validation_data=val_set,
-    callbacks=[early_stopping, reduce_lr]  # Usando ReduceLROnPlateau
+    callbacks=[early_stopping, reduce_lr]
 )
 
 # ============================
