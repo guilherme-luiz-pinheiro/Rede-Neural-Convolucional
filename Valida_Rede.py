@@ -4,11 +4,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, classification_report
 import seaborn as sns
+import time  # <-- Importação para medir o tempo
 
 # ============================
 # 1. Carregar os dados de validação
 # ============================
-VAL_DIR = "C:/Treinamento IA/Validate"
+VAL_DIR = "C:/Treinamento IA - Copia/Validate"
 
 val_datagen = ImageDataGenerator(rescale=1. / 255)
 val_set = val_datagen.flow_from_directory(
@@ -18,7 +19,7 @@ val_set = val_datagen.flow_from_directory(
 # ============================
 # 2. Carregar o modelo treinado
 # ============================
-model = tf.keras.models.load_model('C:/Treinamento IA/result.keras')
+model = tf.keras.models.load_model('C:/Treinamento IA - Copia/result.keras')
 
 # ============================
 # 3. Avaliação do modelo
@@ -26,20 +27,33 @@ model = tf.keras.models.load_model('C:/Treinamento IA/result.keras')
 results = model.evaluate(val_set)
 metrics_names = model.metrics_names
 
-# Exibir todas as métricas retornadas
 print("Resultados da avaliação:")
 for name, value in zip(metrics_names, results):
     print(f"{name}: {value:.4f}")
 
-# Se quiser apenas loss e accuracy
 test_loss, test_accuracy = results[:2]
 print(f"Acurácia do modelo carregado: {test_accuracy * 100:.2f}%")
 
 # ============================
-# 4. Predições no conjunto de validação
+# 4. Predições no conjunto de validação com tempo e porcentagens
 # ============================
+start_time = time.time()
+
 y_pred_prob = model.predict(val_set)  # Probabilidades de previsão
 y_pred = (y_pred_prob > 0.5).astype(int)  # Converte para 0 ou 1
+y_true = val_set.classes  # Valores reais das classes
+
+end_time = time.time()
+elapsed_time = end_time - start_time
+print(f"\nTempo total para analisar as imagens: {elapsed_time:.2f} segundos")
+
+# Exibir porcentagens de certeza por imagem com classe real
+print("\nPorcentagens de certeza por imagem:")
+for i, prob in enumerate(y_pred_prob):
+    predicted_class = int(y_pred[i])
+    true_class = int(y_true[i])
+    confidence = float(prob if predicted_class == 1 else 1 - prob)
+    print(f"Imagem {i+1}: Classe prevista = {predicted_class}, Classe real = {true_class}, Certeza = {confidence * 100:.2f}%")
 
 y_true = val_set.classes  # Valores reais das classes
 
